@@ -14,13 +14,23 @@ def _top_events(events: list[PublicScreenEvent], kind: str, limit: int = 8) -> l
     return [event.text for event in events if event.kind == kind][:limit]
 
 
+def _unique_report_path(output_dir: Path, stamp: str) -> Path:
+    # 时间戳只有秒级精度，同一秒生成两份报告会同名互相覆盖，撞车时追加序号。
+    path = output_dir / f"liveos_community_report_{stamp}.md"
+    suffix = 1
+    while path.exists():
+        path = output_dir / f"liveos_community_report_{stamp}_{suffix}.md"
+        suffix += 1
+    return path
+
+
 def write_markdown_report(result: MonitorResult, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     events = load_events(result.events_path)
     transcript = result.transcript_path.read_text(encoding="utf-8").strip()
     counts = Counter(event.kind for event in events)
 
-    report_path = output_dir / f"liveos_community_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+    report_path = _unique_report_path(output_dir, datetime.now().strftime("%Y%m%d_%H%M%S"))
     lines = [
         "# LiveOS Community Report",
         "",
